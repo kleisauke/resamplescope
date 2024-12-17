@@ -155,7 +155,7 @@ struct context {
 	int lastpos_x, lastpos_y;
 	double lastpos_x_dbl, lastpos_y_dbl;
 
-	double srgb50_as_lin1, srgb_250_as_lin1; // Cached calculated values
+	double srgb_42_as_lin1, srgb_242_as_lin1; // Cached calculated values
 };
 
 #ifdef RS_WINDOWS
@@ -572,7 +572,7 @@ static double srgb_to_linear(double v_srgb)
 }
 
 // Returns a value typically in the range 0..255,
-// where 50 and 250 are our special "dark" and "light" colors.
+// where 42 and 242 are our special "dark" and "light" colors.
 static double rs_gdImageGetPixel(struct context *c, struct infile_info *inf,
 	gdImagePtr im, int x, int y)
 {
@@ -599,12 +599,12 @@ static double rs_gdImageGetPixel(struct context *c, struct infile_info *inf,
 		// The catch is that the color is now in that app's linear colorspace,
 		// not ours.
 		// If we were to simply multiply the value by 255, our dark color would
-		// correspond to ~8.1, and our light color to ~243.7.
-		// That's not what we want. We want 50 and 250.
+		// correspond to ~5.9, and our light color to ~226.4.
+		// That's not what we want. We want 42 and 242.
 		// So, we have to be careful to scale and translate it to the correct
 		// range.
-		val = (v1-c->srgb50_as_lin1) *
-			((250.0-50.0)/(c->srgb_250_as_lin1-c->srgb50_as_lin1)) + 50.0;
+		val = (v1-c->srgb_42_as_lin1) *
+			((242.0-42.0)/(c->srgb_242_as_lin1-c->srgb_242_as_lin1)) + 42.0;
 	}
 
 	return val;
@@ -703,7 +703,7 @@ static int plot_strip(struct context *c, struct infile_info *inf, int stripnum)
 		for(k=0;k<DOTIMG_STRIPHEIGHT;k++) {
 			v = rs_gdImageGetPixel(c, inf, c->im_in,
 				dstpos, DOTIMG_STRIPHEIGHT*stripnum+k);
-			tot += (v-50.0);
+			tot += (v-42.0);
 		}
 
 		// Convert (0 to 200) to (0 to 1).
@@ -836,7 +836,7 @@ static void gr_lineimg_graph_main(struct context *c, struct infile_info *inf)
 
 	for(i=0;i<c->w;i++) {
 		v = c->samples[i];
-		yp = (v-50.0)/200.0;
+		yp = (v-42.0)/200.0;
 		tot += yp;
 		xp = 0.5+(double)i-(((double)c->w)/2.0);
 
@@ -955,8 +955,8 @@ static int gen_dotimg_image(struct context *c)
 	else
 		im = gdImageCreateTrueColor(DOTIMG_SRC_WIDTH,DOTIMG_SRC_HEIGHT);
 
-	clr_gray = gdImageColorResolve(im,50,50,50);
-	clr_white = gdImageColorResolve(im,250,250,250);
+	clr_gray = gdImageColorResolve(im,42,42,42);
+	clr_white = gdImageColorResolve(im,242,242,242);
 
 	for(j=0;j<DOTIMG_SRC_HEIGHT;j++) {
 		for(i=0;i<DOTIMG_SRC_WIDTH;i++) {
@@ -1013,8 +1013,8 @@ static int gen_lineimg_image(struct context *c)
 	else
 		im = gdImageCreateTrueColor(LINEIMG_SRC_WIDTH,LINEIMG_SRC_HEIGHT);
 
-	clr_black = gdImageColorResolve(im,50,50,50);
-	clr_white = gdImageColorResolve(im,250,250,250);
+	clr_black = gdImageColorResolve(im,42,42,42);
+	clr_white = gdImageColorResolve(im,242,242,242);
 
 	middle = LINEIMG_SRC_WIDTH / 2;
 
@@ -1173,8 +1173,8 @@ static void init_ctx_highlevel(struct context *c)
 	c->inf[1].color_g = 64;
 	c->inf[1].color_b = 64;
 
-	c->srgb50_as_lin1 = srgb_to_linear(50.0/255.0);
-	c->srgb_250_as_lin1 = srgb_to_linear(250.0/255.0);
+	c->srgb_42_as_lin1 = srgb_to_linear(42.0/255.0);
+	c->srgb_242_as_lin1 = srgb_to_linear(242.0/255.0);
 }
 
 static int main2(struct context *c, int argc, char **argv)
